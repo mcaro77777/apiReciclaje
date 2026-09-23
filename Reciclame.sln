@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reciclame.Api", "Reciclame.Api\Reciclame.Api.csproj", "{CFCBA2A9-8132-41C3-96AD-08716864935C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reciclame.Api.Tests", "Reciclame.Api.Tests\Reciclame.Api.Tests.csproj", "{631C9C45-5544-4147-B64B-45FEE48A3FFF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CFCBA2A9-8132-41C3-96AD-08716864935C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFCBA2A9-8132-41C3-96AD-08716864935C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFCBA2A9-8132-41C3-96AD-08716864935C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFCBA2A9-8132-41C3-96AD-08716864935C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{631C9C45-5544-4147-B64B-45FEE48A3FFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{631C9C45-5544-4147-B64B-45FEE48A3FFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{631C9C45-5544-4147-B64B-45FEE48A3FFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{631C9C45-5544-4147-B64B-45FEE48A3FFF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

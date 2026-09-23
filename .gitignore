@@ -1,0 +1,61 @@
+## .NET gitignore
+
+# Build results
+bin/
+obj/
+out/
+.compile-check/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+*.rsuser
+
+# Rider
+.idea/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Publish output
+publish/
+PublishProfiles/
+
+# Logs
+*.log
+logs/
+
+# Environment / secrets
+appsettings.Development.json
+*.env
+secrets.json
+
+# Backend antiguo (el despliegue usa Reciclame.Api)
+/ClientApp/
+/Controllers/
+/Data/
+/Infrastructure/
+/Models/
+/Properties/
+/WeatherForecast.cs
+/Program.cs
+/NET.csproj
+/NET.csproj.user
+/NET.http
+/NET.sln
+/appsettings.json
+/docker-compose.yml
+
+# OS
+.DS_Store
+Thumbs.db
