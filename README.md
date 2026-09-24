@@ -28,6 +28,14 @@ Configuracion de la fuente en EasyPanel:
 - Puerto de la aplicacion: `8080`
 - Comprobacion de salud: `/health`
 
+Paginas publicas requeridas por Google Play:
+
+- Politica de privacidad: `/privacidad`
+- Eliminacion de cuenta y datos: `/eliminar-cuenta`
+
+La eliminacion dentro de la app utiliza `DELETE /api/users/me` con un token
+JWT valido. La pagina publica autentica al usuario y utiliza el mismo endpoint.
+
 La conexion utiliza el host interno de MySQL; no necesita exponer el puerto
 3306 a Internet.
 

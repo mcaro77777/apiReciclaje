@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Reciclame.Api.Data;
 using Reciclame.Api.Services;
+using Reciclame.Api.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("MySql");
@@ -81,6 +82,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "reciclame-api" }))
+    .AllowAnonymous();
+app.MapGet("/eliminar-cuenta", () => Results.Content(PublicPages.AccountDeletion, "text/html; charset=utf-8"))
+    .AllowAnonymous();
+app.MapGet("/privacidad", () => Results.Content(PublicPages.PrivacyPolicy, "text/html; charset=utf-8"))
     .AllowAnonymous();
 
 await DatabaseInitializer.InitializeAsync(app.Services);

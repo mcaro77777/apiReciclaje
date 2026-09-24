@@ -44,4 +44,19 @@ public sealed class UsersController(AppDbContext db) : ControllerBase
             })
         });
     }
+
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteMe()
+    {
+        var id = User.UsuarioId();
+        var usuario = await db.Usuarios.FindAsync(id);
+        if (usuario is null) return NotFound();
+
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        await db.Canjes.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
+        db.Usuarios.Remove(usuario);
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return NoContent();
+    }
 }
