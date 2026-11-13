@@ -12,10 +12,10 @@ public sealed class GamificationServiceTests
 
     [Theory]
     [InlineData("plastico", 2, 240)]
-    [InlineData("vidrio", 1.5, 120)]
-    [InlineData("aluminio", 0.5, 90)]
-    [InlineData("papel", 3, 180)]
-    [InlineData("organico", 2, 80)]
+    [InlineData("vidrio", 1.5, 150)]
+    [InlineData("aluminio", 0.5, 75)]
+    [InlineData("papel", 3, 240)]
+    [InlineData("organico", 2, 100)]
     public void CalculatePoints_UsesMaterialMultiplier(string material, double weight, int expected)
     {
         Assert.Equal(expected, _service.CalculatePoints(material, (decimal)weight));

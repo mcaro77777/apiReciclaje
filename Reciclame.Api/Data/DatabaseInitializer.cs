@@ -50,18 +50,18 @@ public static class DatabaseInitializer
             {
                 db.RegistrosReciclaje.AddRange(
                     new RegistroReciclaje { UsuarioId = residente.Id, Material = "plastico", PesoKg = 2.4m, PuntosGanados = 288, Estado = EstadosReciclaje.Validado, ValidadoEn = DateTime.UtcNow.AddDays(-1), CreadoEn = DateTime.UtcNow.AddDays(-1) },
-                    new RegistroReciclaje { UsuarioId = residente.Id, Material = "vidrio", PesoKg = 4.8m, PuntosGanados = 384, Estado = EstadosReciclaje.Validado, ValidadoEn = DateTime.UtcNow.AddDays(-5), CreadoEn = DateTime.UtcNow.AddDays(-5) },
-                    new RegistroReciclaje { UsuarioId = residente.Id, Material = "papel", PesoKg = 1.7m, PuntosGanados = 102, Estado = EstadosReciclaje.Validado, ValidadoEn = DateTime.UtcNow.AddDays(-10), CreadoEn = DateTime.UtcNow.AddDays(-10) });
+                    new RegistroReciclaje { UsuarioId = residente.Id, Material = "vidrio", PesoKg = 4.8m, PuntosGanados = 480, Estado = EstadosReciclaje.Validado, ValidadoEn = DateTime.UtcNow.AddDays(-5), CreadoEn = DateTime.UtcNow.AddDays(-5) },
+                    new RegistroReciclaje { UsuarioId = residente.Id, Material = "papel", PesoKg = 1.7m, PuntosGanados = 136, Estado = EstadosReciclaje.Validado, ValidadoEn = DateTime.UtcNow.AddDays(-10), CreadoEn = DateTime.UtcNow.AddDays(-10) });
             }
         }
 
         if (!await db.Recompensas.AnyAsync())
         {
             db.Recompensas.AddRange(
-                new Recompensa { Nombre = "Compost local", Descripcion = "Bolsa de compost producido en Orito.", Categoria = "Huerto", Icono = "compost", CostoPuntos = 450, Stock = 18, Socio = "Centro de reciclaje Orito", Ubicacion = "Camino a Orito", Terminos = "Un canje por persona al mes." },
-                new Recompensa { Nombre = "Almácigo nativo", Descripcion = "Planta nativa para recuperar jardines de la isla.", Categoria = "Naturaleza", Icono = "plant", CostoPuntos = 700, Stock = 12, Socio = "Vivero comunitario", Ubicacion = "Hanga Roa" },
-                new Recompensa { Nombre = "Retiro de escombros", Descripcion = "Retiro municipal coordinado para tu domicilio.", Categoria = "Municipal", Icono = "truck", CostoPuntos = 1200, Stock = 8, Socio = "Municipalidad" },
-                new Recompensa { Nombre = "Botella reutilizable", Descripcion = "Botella durable libre de plásticos de un solo uso.", Categoria = "Comunidad", Icono = "bottle", CostoPuntos = 900, Stock = 25, Socio = "Red de comercios circulares" });
+                new Recompensa { Nombre = "Compost local", Descripcion = "Bolsa de compost producido en Orito.", Categoria = "Huerto", Icono = "compost", CostoPuntos = 800, Stock = 18, Socio = "Centro de reciclaje Orito", Ubicacion = "Camino a Orito", Terminos = "Un canje por persona al mes." },
+                new Recompensa { Nombre = "Plantas para tu jardín", Descripcion = "Planta nativa para recuperar jardines de la isla.", Categoria = "Naturaleza", Icono = "plant", CostoPuntos = 1000, Stock = 12, Socio = "Vivero comunitario", Ubicacion = "Hanga Roa" },
+                new Recompensa { Nombre = "Retiro de escombros", Descripcion = "Retiro municipal coordinado para tu domicilio.", Categoria = "Municipal", Icono = "truck", CostoPuntos = 5000, Stock = 8, Socio = "Municipalidad" },
+                new Recompensa { Nombre = "Kit de bolsas reutilizables", Descripcion = "Bolsas durables para evitar plásticos de un solo uso.", Categoria = "Comunidad", Icono = "bottle", CostoPuntos = 400, Stock = 25, Socio = "Red de comercios circulares" });
         }
 
         // Completa catalogos creados por la version 1.x sin reemplazar datos
@@ -69,13 +69,25 @@ public static class DatabaseInitializer
         var compost = await db.Recompensas.FirstOrDefaultAsync(x => x.Nombre == "Compost local");
         if (compost is not null)
         {
+            compost.CostoPuntos = 800;
             compost.Socio ??= "Centro de reciclaje Orito";
             compost.Ubicacion ??= "Camino a Orito";
             compost.Terminos ??= "Un canje por persona al mes, sujeto a stock.";
         }
-        var bottle = await db.Recompensas.FirstOrDefaultAsync(x => x.Nombre == "Botella reutilizable");
+        var plant = await db.Recompensas.FirstOrDefaultAsync(x => x.Nombre == "Almácigo nativo" || x.Nombre == "Plantas para tu jardín");
+        if (plant is not null)
+        {
+            plant.Nombre = "Plantas para tu jardín";
+            plant.CostoPuntos = 1000;
+        }
+        var debris = await db.Recompensas.FirstOrDefaultAsync(x => x.Nombre == "Retiro de escombros");
+        if (debris is not null) debris.CostoPuntos = 5000;
+        var bottle = await db.Recompensas.FirstOrDefaultAsync(x => x.Nombre == "Botella reutilizable" || x.Nombre == "Kit de bolsas reutilizables");
         if (bottle is not null)
         {
+            bottle.Nombre = "Kit de bolsas reutilizables";
+            bottle.Descripcion = "Bolsas durables para evitar plásticos de un solo uso.";
+            bottle.CostoPuntos = 400;
             bottle.Socio ??= "Red de comercios circulares";
             bottle.Ubicacion ??= "Hanga Roa";
         }
@@ -99,11 +111,17 @@ public static class DatabaseInitializer
         {
             db.ContenidosEducativos.AddRange(
                 new ContenidoEducativo { Titulo = "Limpio, seco y separado", Descripcion = "Aprende a preparar tus residuos para que puedan ser valorizados.", Tipo = "video", Categoria = "Reciclaje", DuracionMinutos = 4, PuntosRecompensa = 20 },
-                new ContenidoEducativo { Titulo = "Desafío del plástico", Descripcion = "Pon a prueba lo que sabes sobre plásticos de un solo uso.", Tipo = "quiz", Categoria = "Trivia", DuracionMinutos = 3, PuntosRecompensa = 40 },
-                new ContenidoEducativo { Titulo = "Cuidemos el moana", Descripcion = "Conoce el impacto de los residuos en el océano que rodea Rapa Nui.", Tipo = "article", Categoria = "Territorio", DuracionMinutos = 5, PuntosRecompensa = 25 });
+                new ContenidoEducativo { Titulo = "Desafío del plástico", Descripcion = "Pon a prueba lo que sabes sobre plásticos de un solo uso.", Tipo = "quiz", Categoria = "Trivia", DuracionMinutos = 3, PuntosRecompensa = 40, RespuestaCorrecta = "450 años" },
+                new ContenidoEducativo { Titulo = "Cuidemos el moana", Descripcion = "Conoce el impacto de los residuos en el océano que rodea Rapa Nui.", Tipo = "article", Categoria = "Territorio", DuracionMinutos = 5, PuntosRecompensa = 25 },
+                new ContenidoEducativo { Titulo = "Reduce durante tu visita", Descripcion = "Consejos simples para generar menos residuos en la isla.", Tipo = "video", Categoria = "Turismo responsable", DuracionMinutos = 3, PuntosRecompensa = 20 },
+                new ContenidoEducativo { Titulo = "Separación responsable", Descripcion = "Identifica el contenedor correcto para cada material.", Tipo = "quiz", Categoria = "Trivia", DuracionMinutos = 4, PuntosRecompensa = 40 });
         }
         var plasticQuiz = await db.ContenidosEducativos.FirstOrDefaultAsync(x => x.Tipo == "quiz");
         if (plasticQuiz is not null) plasticQuiz.RespuestaCorrecta ??= "450 años";
+        if (!await db.ContenidosEducativos.AnyAsync(x => x.Titulo == "Reduce durante tu visita"))
+            db.ContenidosEducativos.Add(new ContenidoEducativo { Titulo = "Reduce durante tu visita", Descripcion = "Consejos simples para generar menos residuos en la isla.", Tipo = "video", Categoria = "Turismo responsable", DuracionMinutos = 3, PuntosRecompensa = 20 });
+        if (!await db.ContenidosEducativos.AnyAsync(x => x.Titulo == "Separación responsable"))
+            db.ContenidosEducativos.Add(new ContenidoEducativo { Titulo = "Separación responsable", Descripcion = "Identifica el contenedor correcto para cada material.", Tipo = "quiz", Categoria = "Trivia", DuracionMinutos = 4, PuntosRecompensa = 40 });
 
         if (!await db.Insignias.AnyAsync())
         {
@@ -133,11 +151,19 @@ public static class DatabaseInitializer
             db.MetasComunitarias.Add(new MetaComunitaria
             {
                 Titulo = "Umanga por una isla limpia",
-                Descripcion = "Entre toda la comunidad, reciclemos 1.500 kg este mes.",
-                ObjetivoKg = 1500,
+                Descripcion = "Entre toda la comunidad, reciclemos 2.000 kg este mes.",
+                ObjetivoKg = 2000,
                 IniciaEn = monthStart,
                 TerminaEn = monthEnd
             });
+        }
+
+        var activeGoal = await db.MetasComunitarias
+            .FirstOrDefaultAsync(x => x.Activa && x.IniciaEn <= now && x.TerminaEn >= now);
+        if (activeGoal is not null)
+        {
+            activeGoal.Descripcion = "Entre toda la comunidad, reciclemos 2.000 kg este mes.";
+            activeGoal.ObjetivoKg = 2000;
         }
 
         await db.SaveChangesAsync();

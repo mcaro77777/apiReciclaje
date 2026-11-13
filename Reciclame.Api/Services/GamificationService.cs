@@ -10,10 +10,10 @@ public sealed class GamificationService(AppDbContext db)
         new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
             ["plastico"] = 120,
-            ["vidrio"] = 80,
-            ["aluminio"] = 180,
-            ["papel"] = 60,
-            ["organico"] = 40
+            ["vidrio"] = 100,
+            ["aluminio"] = 150,
+            ["papel"] = 80,
+            ["organico"] = 50
         };
 
     private static readonly IReadOnlyDictionary<string, decimal> Co2PerKg =
