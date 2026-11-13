@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Reciclame.Api.Contracts;
 using Reciclame.Api.Data;
+using Reciclame.Api.Extensions;
 using Reciclame.Api.Models;
 using Reciclame.Api.Services;
 
@@ -43,6 +44,5 @@ public sealed class AuthController(AppDbContext db, PasswordService passwords, T
         return Ok(CrearRespuesta(usuario));
     }
 
-    private RespuestaAutenticacion CrearRespuesta(Usuario usuario) => new(tokens.Create(usuario),
-        new RespuestaUsuario(usuario.Id, usuario.Nombre, usuario.Correo, usuario.Rol, usuario.Puntos, usuario.Nivel));
+    private RespuestaAutenticacion CrearRespuesta(Usuario usuario) => new(tokens.Create(usuario), usuario.ToResponse());
 }

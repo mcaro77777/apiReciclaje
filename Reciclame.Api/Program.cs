@@ -1,5 +1,9 @@
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -26,6 +30,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         mysql => mysql.EnableRetryOnFailure()));
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<GamificationService>();
+
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("reciclame-api");
+}
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -42,10 +55,37 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
-builder.Services.AddCors(options => options.AddPolicy("client", policy => policy
-    .AllowAnyOrigin()
-    .AllowAnyHeader()
-    .AllowAnyMethod()));
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var allowedOriginsCsv = builder.Configuration["Cors:AllowedOriginsCsv"];
+if (!string.IsNullOrWhiteSpace(allowedOriginsCsv))
+{
+    allowedOrigins = allowedOrigins
+        .Concat(allowedOriginsCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+}
+builder.Services.AddCors(options => options.AddPolicy("client", policy =>
+{
+    policy.AllowAnyHeader().AllowAnyMethod();
+    if (allowedOrigins.Length > 0) policy.WithOrigins(allowedOrigins);
+    else if (builder.Environment.IsDevelopment()) policy.AllowAnyOrigin();
+}));
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:PermitLimit") ?? 120,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -75,14 +115,25 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseCors("client");
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "reciclame-api" }))
     .AllowAnonymous();
+app.MapGet("/api/config/mapbox", (IConfiguration configuration) =>
+{
+    var token = configuration["Mapbox:PublicToken"]?.Trim();
+    return string.IsNullOrWhiteSpace(token) || !token.StartsWith("pk.", StringComparison.Ordinal)
+        ? Results.Ok(new { available = false })
+        : Results.Ok(new { available = true, accessToken = token });
+}).AllowAnonymous();
 app.MapGet("/eliminar-cuenta", () => Results.Content(PublicPages.AccountDeletion, "text/html; charset=utf-8"))
     .AllowAnonymous();
 app.MapGet("/privacidad", () => Results.Content(PublicPages.PrivacyPolicy, "text/html; charset=utf-8"))

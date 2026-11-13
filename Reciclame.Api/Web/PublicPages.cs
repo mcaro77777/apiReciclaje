@@ -21,7 +21,7 @@ public static class PublicPages
 <body><main>
   <h1>Eliminar cuenta de Reciclame</h1>
   <p>Este formulario permite eliminar de forma inmediata tu cuenta y los datos personales asociados.</p>
-  <div class="notice"><strong>Se eliminarán:</strong> perfil, nombre, correo, puntos, nivel, registros de reciclaje, solicitudes de retiro, notas y canjes. No conservamos una copia de estos datos después de la eliminación.</div>
+  <div class="notice"><strong>Se eliminarán:</strong> perfil, nombre, correo, eco-monedas, experiencia, nivel, registros de reciclaje, progreso de misiones y contenidos, insignias, solicitudes de retiro, notas y canjes. No conservamos una copia de estos datos después de la eliminación.</div>
   <form id="delete-form">
     <label for="email">Correo de la cuenta</label>
     <input id="email" type="email" autocomplete="username" required>
@@ -67,10 +67,11 @@ public static class PublicPages
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Política de privacidad - Reciclame</title>
 <style>body{font-family:system-ui,sans-serif;color:#27233f;line-height:1.6;margin:0;padding:24px}main{max-width:760px;margin:auto}h1,h2{line-height:1.2}</style></head>
-<body><main><h1>Política de privacidad de Reciclame</h1><p>Última actualización: 23 de septiembre de 2026.</p>
-<h2>Datos recopilados</h2><p>Recopilamos nombre, correo electrónico, identificador de cuenta, rol, puntos, nivel, registros de reciclaje y, cuando el usuario solicita un retiro, dirección, materiales, fecha y notas.</p>
-<h2>Finalidad</h2><p>Los datos se utilizan exclusivamente para crear y administrar la cuenta, registrar actividades de reciclaje, asignar puntos y recompensas, coordinar retiros y operar las funciones de Reciclame.</p>
-<h2>Protección y terceros</h2><p>La información se transmite mediante HTTPS y se almacena en la infraestructura de Reciclame. No vendemos datos ni los compartimos con terceros para publicidad.</p>
+<body><main><h1>Política de privacidad de Reciclame</h1><p>Última actualización: 28 de octubre de 2026.</p>
+<h2>Datos recopilados</h2><p>Recopilamos nombre, correo electrónico, identificador de cuenta, tipo de perfil, eco-monedas, experiencia, nivel, racha semanal, registros de reciclaje, progreso de misiones y contenidos, insignias y canjes. Cuando solicitas un retiro también recopilamos dirección, materiales, fecha y notas.</p>
+<h2>Ubicación y mapas</h2><p>La ubicación del dispositivo se solicita únicamente cuando pulsas “Usar mi ubicación”, para mostrar y ordenar centros de acopio cercanos. Reciclame no envía ni almacena esa ubicación en su API. El mapa utiliza Mapbox, que recibe las solicitudes técnicas necesarias para entregar el servicio conforme a su propia <a href="https://www.mapbox.com/legal/privacy" rel="noopener noreferrer">política de privacidad</a>.</p>
+<h2>Finalidad</h2><p>Los datos se utilizan para crear y administrar la cuenta, validar actividades de reciclaje, calcular impacto ambiental, asignar experiencia, eco-monedas, misiones e insignias, gestionar recompensas y coordinar retiros.</p>
+<h2>Protección y terceros</h2><p>La información se transmite mediante HTTPS y se almacena en la infraestructura contratada por Reciclame. No vendemos datos ni los utilizamos para publicidad personalizada. Solo intervienen proveedores técnicos necesarios para operar la API, la base de datos y el mapa.</p>
 <h2>Conservación y eliminación</h2><p>Los datos se conservan mientras la cuenta permanezca activa. El usuario puede eliminar inmediatamente su cuenta y datos asociados mediante la página de eliminación.</p>
 <p><a href="/eliminar-cuenta">Solicitar la eliminación de cuenta y datos</a></p>
 </main></body></html>
