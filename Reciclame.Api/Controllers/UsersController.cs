@@ -60,14 +60,18 @@ public sealed class UsersController(AppDbContext db, GamificationService gamific
         var usuario = await db.Usuarios.FindAsync(id);
         if (usuario is null) return NotFound();
 
-        await using var transaction = await db.Database.BeginTransactionAsync();
-        await db.Canjes.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
-        await db.ProgresosMision.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
-        await db.ProgresosEducativos.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
-        await db.UsuariosInsignias.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
-        db.Usuarios.Remove(usuario);
-        await db.SaveChangesAsync();
-        await transaction.CommitAsync();
-        return NoContent();
+        var strategy = db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync<IActionResult>(async () =>
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            await db.Canjes.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
+            await db.ProgresosMision.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
+            await db.ProgresosEducativos.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
+            await db.UsuariosInsignias.Where(x => x.UsuarioId == id).ExecuteDeleteAsync();
+            db.Usuarios.Remove(usuario);
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return NoContent();
+        });
     }
 }

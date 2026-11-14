@@ -40,33 +40,37 @@ public sealed class RewardsController(AppDbContext db) : ControllerBase
     [HttpPost("{id:guid}/redeem")]
     public async Task<ActionResult> Redeem(Guid id)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-        var usuario = await db.Usuarios.FindAsync(User.UsuarioId());
-        var recompensa = await db.Recompensas.FindAsync(id);
-        if (usuario is null || recompensa is null || !recompensa.Activa) return NotFound();
-        if (recompensa.Stock <= 0) return Conflict(new ProblemDetails { Title = "Recompensa sin stock." });
-        if (recompensa.ValidaHasta is not null && recompensa.ValidaHasta < DateTime.UtcNow)
-            return Conflict(new ProblemDetails { Title = "Esta recompensa ya no está vigente." });
-        if (usuario.Puntos < recompensa.CostoPuntos) return Conflict(new ProblemDetails { Title = "No tienes puntos suficientes." });
+        var strategy = db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync<ActionResult>(async () =>
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+            var usuario = await db.Usuarios.FindAsync(User.UsuarioId());
+            var recompensa = await db.Recompensas.FindAsync(id);
+            if (usuario is null || recompensa is null || !recompensa.Activa) return NotFound();
+            if (recompensa.Stock <= 0) return Conflict(new ProblemDetails { Title = "Recompensa sin stock." });
+            if (recompensa.ValidaHasta is not null && recompensa.ValidaHasta < DateTime.UtcNow)
+                return Conflict(new ProblemDetails { Title = "Esta recompensa ya no está vigente." });
+            if (usuario.Puntos < recompensa.CostoPuntos) return Conflict(new ProblemDetails { Title = "No tienes puntos suficientes." });
 
-        usuario.Puntos -= recompensa.CostoPuntos;
-        recompensa.Stock--;
-        var canje = new Canje
-        {
-            UsuarioId = usuario.Id, RecompensaId = recompensa.Id, PuntosGastados = recompensa.CostoPuntos,
-            Codigo = $"RAP-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
-            VenceEn = recompensa.ValidaHasta is { } validUntil && validUntil < DateTime.UtcNow.AddDays(30)
-                ? validUntil
-                : DateTime.UtcNow.AddDays(30)
-        };
-        db.Canjes.Add(canje);
-        await db.SaveChangesAsync();
-        await transaction.CommitAsync();
-        return Ok(new
-        {
-            canje.Id, canje.Codigo, canje.Estado, canje.VenceEn,
-            puntosRestantes = usuario.Puntos, ecoMonedas = usuario.Puntos,
-            experiencia = usuario.Experiencia, nivel = usuario.Nivel
+            usuario.Puntos -= recompensa.CostoPuntos;
+            recompensa.Stock--;
+            var canje = new Canje
+            {
+                UsuarioId = usuario.Id, RecompensaId = recompensa.Id, PuntosGastados = recompensa.CostoPuntos,
+                Codigo = $"RAP-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+                VenceEn = recompensa.ValidaHasta is { } validUntil && validUntil < DateTime.UtcNow.AddDays(30)
+                    ? validUntil
+                    : DateTime.UtcNow.AddDays(30)
+            };
+            db.Canjes.Add(canje);
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return Ok(new
+            {
+                canje.Id, canje.Codigo, canje.Estado, canje.VenceEn,
+                puntosRestantes = usuario.Puntos, ecoMonedas = usuario.Puntos,
+                experiencia = usuario.Experiencia, nivel = usuario.Nivel
+            });
         });
     }
 }

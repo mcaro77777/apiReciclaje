@@ -74,21 +74,26 @@ public sealed class AdminController(
             return Ok(new { record.Id, record.Estado, record.MotivoRechazo });
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync();
-        if (request.PesoVerificadoKg is not null) record.PesoKg = request.PesoVerificadoKg.Value;
-        record.PuntosGanados = gamification.CalculatePoints(record.Material, record.PesoKg);
-        record.Estado = EstadosReciclaje.Validado;
-        record.ValidadoPorId = User.UsuarioId();
-        record.ValidadoEn = DateTime.UtcNow;
-        record.MotivoRechazo = null;
+        var strategy = db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            if (request.PesoVerificadoKg is not null) record.PesoKg = request.PesoVerificadoKg.Value;
+            record.PuntosGanados = gamification.CalculatePoints(record.Material, record.PesoKg);
+            record.Estado = EstadosReciclaje.Validado;
+            record.ValidadoPorId = User.UsuarioId();
+            record.ValidadoEn = DateTime.UtcNow;
+            record.MotivoRechazo = null;
+            var validatedUser = record.Usuario!;
+            gamification.Award(validatedUser, record.PuntosGanados, record.PuntosGanados);
+            await gamification.AdvanceMissionsAsync(validatedUser.Id, "recycle", record.PesoKg, record.Material);
+            if (record.PuntoLimpioId is not null) await gamification.AdvanceMissionsAsync(validatedUser.Id, "visit_point");
+            await db.SaveChangesAsync();
+            await gamification.AwardBadgesAsync(validatedUser.Id);
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        });
         var user = record.Usuario!;
-        gamification.Award(user, record.PuntosGanados, record.PuntosGanados);
-        await gamification.AdvanceMissionsAsync(user.Id, "recycle", record.PesoKg, record.Material);
-        if (record.PuntoLimpioId is not null) await gamification.AdvanceMissionsAsync(user.Id, "visit_point");
-        await db.SaveChangesAsync();
-        await gamification.AwardBadgesAsync(user.Id);
-        await db.SaveChangesAsync();
-        await transaction.CommitAsync();
         return Ok(new
         {
             record.Id, record.Estado, record.PesoKg, record.PuntosGanados,

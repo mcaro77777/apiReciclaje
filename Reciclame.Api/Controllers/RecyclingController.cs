@@ -72,21 +72,26 @@ public sealed class RecyclingController(
             ValidadoEn = codeValid ? DateTime.UtcNow : null
         };
 
-        await using var transaction = await db.Database.BeginTransactionAsync();
         db.RegistrosReciclaje.Add(registro);
-        if (codeValid)
+        if (!codeValid)
         {
-            gamification.Award(usuario, puntos, puntos);
-            await gamification.AdvanceMissionsAsync(usuario.Id, "recycle", request.PesoKg, material);
-            if (point is not null) await gamification.AdvanceMissionsAsync(usuario.Id, "visit_point");
-        }
-        await db.SaveChangesAsync();
-        if (codeValid)
-        {
-            await gamification.AwardBadgesAsync(usuario.Id);
             await db.SaveChangesAsync();
         }
-        await transaction.CommitAsync();
+        else
+        {
+            var strategy = db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync();
+                gamification.Award(usuario, puntos, puntos);
+                await gamification.AdvanceMissionsAsync(usuario.Id, "recycle", request.PesoKg, material);
+                if (point is not null) await gamification.AdvanceMissionsAsync(usuario.Id, "visit_point");
+                await db.SaveChangesAsync();
+                await gamification.AwardBadgesAsync(usuario.Id);
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+            });
+        }
 
         return CreatedAtAction(nameof(List), new
         {

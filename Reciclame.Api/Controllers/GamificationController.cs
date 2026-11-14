@@ -104,35 +104,39 @@ public sealed class GamificationController(AppDbContext db, GamificationService 
     [HttpPost("missions/{id:guid}/claim")]
     public async Task<ActionResult> ClaimMission(Guid id, CancellationToken cancellationToken)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-        var userId = User.UsuarioId();
-        var progress = await db.ProgresosMision
-            .Include(x => x.Mision)
-            .SingleOrDefaultAsync(x => x.UsuarioId == userId && x.MisionId == id, cancellationToken);
-        if (progress is null || progress.Mision is null)
-            return NotFound(new ProblemDetails { Title = "La misión no tiene progreso registrado." });
-        if (!progress.Completada)
-            return Conflict(new ProblemDetails { Title = "Completa la misión antes de reclamarla." });
-        if (progress.Reclamada)
-            return Conflict(new ProblemDetails { Title = "Esta recompensa ya fue reclamada." });
-
-        var user = await db.Usuarios.FindAsync([userId], cancellationToken);
-        if (user is null) return NotFound();
-        progress.Reclamada = true;
-        progress.ReclamadaEn = DateTime.UtcNow;
-        gamification.Award(user, progress.Mision.RecompensaMonedas, progress.Mision.RecompensaExperiencia);
-        await db.SaveChangesAsync(cancellationToken);
-        await gamification.AwardBadgesAsync(userId, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        return Ok(new
+        var strategy = db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync<ActionResult>(async () =>
         {
-            progress.MisionId,
-            progress.Reclamada,
-            experienciaGanada = progress.Mision.RecompensaExperiencia,
-            ecoMonedasGanadas = progress.Mision.RecompensaMonedas,
-            usuario = user.ToResponse()
+            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            var userId = User.UsuarioId();
+            var progress = await db.ProgresosMision
+                .Include(x => x.Mision)
+                .SingleOrDefaultAsync(x => x.UsuarioId == userId && x.MisionId == id, cancellationToken);
+            if (progress is null || progress.Mision is null)
+                return NotFound(new ProblemDetails { Title = "La misión no tiene progreso registrado." });
+            if (!progress.Completada)
+                return Conflict(new ProblemDetails { Title = "Completa la misión antes de reclamarla." });
+            if (progress.Reclamada)
+                return Conflict(new ProblemDetails { Title = "Esta recompensa ya fue reclamada." });
+
+            var user = await db.Usuarios.FindAsync([userId], cancellationToken);
+            if (user is null) return NotFound();
+            progress.Reclamada = true;
+            progress.ReclamadaEn = DateTime.UtcNow;
+            gamification.Award(user, progress.Mision.RecompensaMonedas, progress.Mision.RecompensaExperiencia);
+            await db.SaveChangesAsync(cancellationToken);
+            await gamification.AwardBadgesAsync(userId, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return Ok(new
+            {
+                progress.MisionId,
+                progress.Reclamada,
+                experienciaGanada = progress.Mision.RecompensaExperiencia,
+                ecoMonedasGanadas = progress.Mision.RecompensaMonedas,
+                usuario = user.ToResponse()
+            });
         });
     }
 }

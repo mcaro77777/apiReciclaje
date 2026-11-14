@@ -40,37 +40,41 @@ public sealed class ContentController(AppDbContext db, GamificationService gamif
         SolicitudCompletarContenido request,
         CancellationToken cancellationToken)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-        var userId = User.UsuarioId();
-        if (await db.ProgresosEducativos.AnyAsync(
-                x => x.UsuarioId == userId && x.ContenidoEducativoId == id, cancellationToken))
-            return Conflict(new ProblemDetails { Title = "Este contenido ya fue completado." });
-
-        var content = await db.ContenidosEducativos.FindAsync([id], cancellationToken);
-        var user = await db.Usuarios.FindAsync([userId], cancellationToken);
-        if (content is null || user is null) return NotFound();
-        if (content.Tipo.Equals("quiz", StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrWhiteSpace(content.RespuestaCorrecta) &&
-            Normalize(request.Respuesta) != Normalize(content.RespuestaCorrecta))
+        var strategy = db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync<ActionResult>(async () =>
         {
-            return BadRequest(new ProblemDetails { Title = "La respuesta no es correcta. Inténtalo nuevamente." });
-        }
+            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            var userId = User.UsuarioId();
+            if (await db.ProgresosEducativos.AnyAsync(
+                    x => x.UsuarioId == userId && x.ContenidoEducativoId == id, cancellationToken))
+                return Conflict(new ProblemDetails { Title = "Este contenido ya fue completado." });
 
-        var reward = Math.Max(0, content.PuntosRecompensa);
-        db.ProgresosEducativos.Add(new ProgresoEducativo
-        {
-            UsuarioId = userId,
-            ContenidoEducativoId = id,
-            ExperienciaGanada = reward,
-            MonedasGanadas = reward
+            var content = await db.ContenidosEducativos.FindAsync([id], cancellationToken);
+            var user = await db.Usuarios.FindAsync([userId], cancellationToken);
+            if (content is null || user is null) return NotFound();
+            if (content.Tipo.Equals("quiz", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(content.RespuestaCorrecta) &&
+                Normalize(request.Respuesta) != Normalize(content.RespuestaCorrecta))
+            {
+                return BadRequest(new ProblemDetails { Title = "La respuesta no es correcta. Inténtalo nuevamente." });
+            }
+
+            var reward = Math.Max(0, content.PuntosRecompensa);
+            db.ProgresosEducativos.Add(new ProgresoEducativo
+            {
+                UsuarioId = userId,
+                ContenidoEducativoId = id,
+                ExperienciaGanada = reward,
+                MonedasGanadas = reward
+            });
+            gamification.Award(user, reward, reward);
+            await gamification.AdvanceMissionsAsync(userId, "education", cancellationToken: cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+            await gamification.AwardBadgesAsync(userId, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return Ok(new { contenidoId = id, experienciaGanada = reward, ecoMonedasGanadas = reward, usuario = user.ToResponse() });
         });
-        gamification.Award(user, reward, reward);
-        await gamification.AdvanceMissionsAsync(userId, "education", cancellationToken: cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-        await gamification.AwardBadgesAsync(userId, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return Ok(new { contenidoId = id, experienciaGanada = reward, ecoMonedasGanadas = reward, usuario = user.ToResponse() });
     }
 
     [Authorize, HttpPost("vananga")]
